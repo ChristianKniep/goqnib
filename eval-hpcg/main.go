@@ -15,12 +15,12 @@
 package main
 
 import (
+    "bytes"
 	"fmt"
 	"github.com/docopt/docopt-go"
 	"github.com/kylelemons/go-gypsy/yaml"
 	"log"
 	"os"
-	"reflect"
 )
 
 /*
@@ -54,27 +54,28 @@ func nodeToList(node yaml.Node) yaml.List {
 	return m
 }
 
-func readLastLine(fname string) {
-	file, err := os.Open(fname)
+function ParseHPCG(string file) (yaml.Node ya) {
+	file_descr, err := os.Open(file)
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer file_descr.Close()
 
-	fi, err := file.Stat()
+	fi, err := file_descr.Stat()
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	buf := make([]byte, 32)
-	n, err := file.ReadAt(buf, fi.Size()-int64(len(buf)))
-	if err != nil {
-		fmt.Println(err)
-	}
+	buf := make([]byte, fi.Size())
+	n, err := file_descr.ReadAt(buf, 19)
 	buf = buf[:n]
-	fmt.Printf("%s", buf)
-
+    reader := bytes.NewReader(buf)
+	config, err := yaml.Parse(reader)
+	if err != nil {
+		log.Fatalf("readfile(%q): %s", file, err)
+	}
+    return config
 }
+
 
 func main() {
 	usage := `evaluate HPCG output
@@ -89,35 +90,13 @@ Options:
   --version     Show version.
 `
 
-	arguments, _ := docopt.Parse(usage, nil, true, "Naval Fate 2.0", false)
-	fmt.Println(arguments)
+	arguments, _ := docopt.Parse(usage, nil, true, "0.1", false)
 	file := arguments["<file>"].(string)
-	file_descr, err := os.Open(file)
-	if err != nil {
-		panic(err)
-	}
-	defer file_descr.Close()
-
-	fi, err := file_descr.Stat()
-	if err != nil {
-		fmt.Println(err)
-	}
-	buf := make([]byte, fi.Size())
-	n, err := file_descr.ReadAt(buf, fi.Size()-int64(len(buf)))
-	if err != nil {
-		fmt.Println(err)
-	}
-	buf = buf[:n]
-	fmt.Printf("%s", buf)
-	config, err := yaml.ReadFile(file)
-	if err != nil {
-		log.Fatalf("readfile(%q): %s", file, err)
-	}
+    ya := ParseHPCG(file)
 	param := "Benchmark Time Summary"
 	subparam := "Total"
-	val := nodeToMap(config.Root)[param]
+	val := nodeToMap(config)[param]
 	subval := nodeToMap(val)[subparam]
-	fmt.Println(reflect.TypeOf(val))
 	if err != nil {
 		log.Fatalf("read_param(%s): %s", param, err)
 	}
