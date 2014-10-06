@@ -103,7 +103,7 @@ Options:
 		fmt.Println(err)
 	}
 	buf := make([]byte, fi.Size())
-	n, err := file_descr.ReadAt(buf, fi.Size()-int64(len(buf)))
+	n, err := file_descr.ReadAt(buf, 21)
 	if err != nil {
 		fmt.Println(err)
 	}
