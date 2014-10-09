@@ -61,24 +61,31 @@ func parseJobCfg(file_path string) map[string]string {
 	return mymap
 }
 
+func updateMap(old map[string]string, new map[string]string) map[string]string {
+	for key, value := range new {
+		old[key] = value
+	}
+	return old
+}
+
 func evalDir(path string) (yaml.Node, map[string]string) {
 	files, _ := ioutil.ReadDir(path)
 	job_cfg := make(map[string]string)
 	job_res := *new(yaml.Node)
 	for _, f := range files {
 		if strings.HasSuffix(f.Name(), ".yaml") {
+			//2014.10.08.22.12.51
+			re := regexp.MustCompile("20[0-9]+.[0-9]+.[0-9]+.[0-9]+.[0-9]+.[0-9]+")
+			ydate := re.FindStringSubmatch(f.Name())
+			// TODO: []string -> string?
+			if ydate != nil {
+				job_cfg["yaml_date"] = strings.Join(ydate, "")
+			}
 			job_res = parseHPCG(fmt.Sprintf("%s/%s", path, f.Name()))
 		}
 		if strings.HasSuffix(f.Name(), ".cfg") {
-			job_cfg = parseJobCfg(fmt.Sprintf("%s/%s", path, f.Name()))
+			job_cfg = updateMap(job_cfg, parseJobCfg(fmt.Sprintf("%s/%s", path, f.Name())))
 		}
-	}
-	// Fetch datestring
-	re := regexp.MustCompile("20[0-9_-]+")
-	pdate := re.FindStringSubmatch(path)
-	// TODO: []string -> string?
-	if pdate != nil {
-		job_cfg["path_date"] = strings.Join(pdate, "")
 	}
 	return job_res, job_cfg
 
@@ -168,9 +175,9 @@ Options:
 	gflops, _ := strconv.ParseFloat(job_cfg["GFLOPs"], 64)
 	ctime, _ := strconv.ParseFloat(job_cfg["CTIME"], 64)
 	wtime, _ := strconv.ParseFloat(job_cfg["wall_clock"], 64)
-	_, present := job_cfg["path_date"]
+	_, present := job_cfg["yaml_date"]
 	if present {
-		fmt.Printf("| PTIME:%s |", job_cfg["path_date"])
+		fmt.Printf("| YTIME:%s |", job_cfg["yaml_date"])
 	} else {
 		fmt.Printf("| MTIME:%s |", job_cfg["mod_time"])
 	}
