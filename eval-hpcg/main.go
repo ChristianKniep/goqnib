@@ -28,12 +28,6 @@ import (
 	"strings"
 )
 
-/*
-res_map = {
-        "mach.threads_per_proc": ['Machine Summary', 'Threads per processes'],
-    }
-*/
-
 func getFileInfo(file_path string) os.FileInfo {
 	file_descr, err := os.Open(file_path)
 	if err != nil {
@@ -68,7 +62,7 @@ func updateMap(old map[string]string, new map[string]string) map[string]string {
 	return old
 }
 
-func evalDir(path string) (yaml.Node, map[string]string) {
+func evalResultDir(path string) (yaml.Node, map[string]string) {
 	files, _ := ioutil.ReadDir(path)
 	job_cfg := make(map[string]string)
 	job_res := *new(yaml.Node)
@@ -135,6 +129,42 @@ func fetch2D(node yaml.Node, param string) yaml.Node {
 	}
 	return val
 }
+func printDir(path string, params map[string]string) {
+	job_res, job_cfg := evalResultDir(path)
+	for key, value := range params {
+		job_cfg[key] = fmt.Sprint(fetch2D(job_res, value))
+	}
+	gflops, _ := strconv.ParseFloat(job_cfg["GFLOPs"], 64)
+	ctime, _ := strconv.ParseFloat(job_cfg["CTIME"], 64)
+	wtime, _ := strconv.ParseFloat(job_cfg["wall_clock"], 64)
+	_, present := job_cfg["yaml_date"]
+	if present {
+		fmt.Printf("| YTIME:%s |", job_cfg["yaml_date"])
+	} else {
+		fmt.Printf("| MTIME:%s |", job_cfg["mod_time"])
+	}
+	fmt.Printf(" #PROC:%2s |", job_cfg["#PROC"])
+	fmt.Printf(" NODES:%-27s |", job_cfg["slurm_nodelist"])
+	fmt.Printf(" MPI:%-10s |", job_cfg["mpi_ver"])
+	fmt.Printf(" WTIME:%6.1f |", wtime)
+	fmt.Printf(" CTIME:%6.1f |", ctime)
+	fmt.Printf(" GFLOPS:%8.5f |", gflops)
+	fmt.Printf("\n")
+}
+
+func walkDir(path string, params map[string]string) {
+	/* Walks down the path and spawns evaluation if the
+	*  directory contains a result file (yaml file)
+	 */
+	items, _ := ioutil.ReadDir(path)
+	for _, item := range items {
+		if item.IsDir() {
+			walkDir(fmt.Sprintf("%s/%s", path, item.Name()), params)
+		} else if strings.HasSuffix(item.Name(), ".yaml") {
+			printDir(path, params)
+		}
+	}
+}
 
 func main() {
 	usage := `evaluate HPCG output
@@ -168,24 +198,7 @@ Options:
 	*/
 	arguments, _ := docopt.Parse(usage, nil, true, "0.1", false)
 	path := arguments["<path>"].(string)
-	job_res, job_cfg := evalDir(path)
-	for key, value := range params {
-		job_cfg[key] = fmt.Sprint(fetch2D(job_res, value))
-	}
-	gflops, _ := strconv.ParseFloat(job_cfg["GFLOPs"], 64)
-	ctime, _ := strconv.ParseFloat(job_cfg["CTIME"], 64)
-	wtime, _ := strconv.ParseFloat(job_cfg["wall_clock"], 64)
-	_, present := job_cfg["yaml_date"]
-	if present {
-		fmt.Printf("| YTIME:%s |", job_cfg["yaml_date"])
-	} else {
-		fmt.Printf("| MTIME:%s |", job_cfg["mod_time"])
-	}
-	fmt.Printf(" #PROC:%2s |", job_cfg["#PROC"])
-	fmt.Printf(" NODES:%-27s |", job_cfg["slurm_nodelist"])
-	fmt.Printf(" MPI:%-10s |", job_cfg["mpi_ver"])
-	fmt.Printf(" WTIME:%6.1f |", wtime)
-	fmt.Printf(" CTIME:%6.1f |", ctime)
-	fmt.Printf(" GFLOPS:%8.5f |", gflops)
-	fmt.Printf("\n")
+	// enter directory
+	walkDir(path, params)
+
 }
