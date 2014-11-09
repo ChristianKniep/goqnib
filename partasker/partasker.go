@@ -32,10 +32,10 @@ import (
 )
 
 type factory interface {
-	make(line string) task
+	make(line string) tasks
 }
 
-type task interface {
+type tasks interface {
 	process()
 	print()
 }
@@ -69,14 +69,14 @@ func (l *lookup) process() {
 type lookupFactory struct {
 }
 
-func (f *lookupFactory) make(line string) task {
+func (f *lookupFactory) make(line string) tasks {
 	return &lookup{name: line}
 }
 
 func run(f factory) {
 	var wg sync.WaitGroup
 
-	in := make(chan task)
+	in := make(chan tasks)
 
 	wg.Add(1)
 	go func() {
@@ -91,7 +91,7 @@ func run(f factory) {
 		wg.Done()
 	}()
 
-	out := make(chan task)
+	out := make(chan tasks)
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
