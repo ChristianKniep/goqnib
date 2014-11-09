@@ -40,16 +40,16 @@ type tasks interface {
 	print()
 }
 
-type lookup struct {
+type mytask struct {
 	name       string
 	err        error
 	cloudflare bool
 }
 
-func (l *lookup) print() {
+func (l *mytask) print() {
 	fmt.Println(l.name)
 }
-func (l *lookup) process() {
+func (l *mytask) process() {
 	fmt.Println("Inside process: %s", l.name)
 	/*
 		nss, err := net.LookupNS(l.name)
@@ -66,11 +66,11 @@ func (l *lookup) process() {
 	*/
 }
 
-type lookupFactory struct {
+type taskFactory struct {
 }
 
-func (f *lookupFactory) make(line string) tasks {
-	return &lookup{name: line}
+func (f *taskFactory) make(line string) tasks {
+	return &mytask{name: line}
 }
 
 func run(f factory) {
@@ -129,5 +129,5 @@ func main() {
 			arguments, _ := docopt.Parse(usage, nil, true, "0.1", false)
 			path := arguments["<path>"].(string)
 	*/
-	run(&lookupFactory{})
+	run(&taskFactory{})
 }
