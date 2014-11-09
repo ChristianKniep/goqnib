@@ -18,7 +18,7 @@
  * source: https://github.com/jgrahamc/dotgo
  */
 
-package partasker
+package libpartasker
 
 import (
 	"bufio"
@@ -31,11 +31,11 @@ import (
 	//"github.com/docopt/docopt-go"
 )
 
-type factory interface {
-	make(line string) tasks
+type Factory interface {
+	make(line string) Tasks
 }
 
-type tasks interface {
+type Tasks interface {
 	process()
 	print()
 }
@@ -66,17 +66,17 @@ func (l *mytask) process() {
 	*/
 }
 
-type taskFactory struct {
+type TaskFactory struct {
 }
 
-func (f *taskFactory) make(line string) tasks {
+func (f *TaskFactory) make(line string) Tasks {
 	return &mytask{name: line}
 }
 
-func run(f factory) {
+func RunFactory(f Factory) {
 	var wg sync.WaitGroup
 
-	in := make(chan tasks)
+	in := make(chan Tasks)
 
 	wg.Add(1)
 	go func() {
@@ -91,7 +91,7 @@ func run(f factory) {
 		wg.Done()
 	}()
 
-	out := make(chan tasks)
+	out := make(chan Tasks)
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
