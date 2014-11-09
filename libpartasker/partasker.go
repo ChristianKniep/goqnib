@@ -18,7 +18,7 @@
  * source: https://github.com/jgrahamc/dotgo
  */
 
-package main
+package partasker
 
 import (
 	"bufio"
@@ -111,23 +111,4 @@ func run(f factory) {
 	for t := range out {
 		t.print()
 	}
-}
-
-func main() {
-	/*
-			usage := `evaluate HPCG output
-
-		Usage:
-		  eval-hpcg [options] <path>
-		  eval-hpcg -h | --help
-		  eval-hpcg --version
-
-		Options:
-		  -h --help     Show this screen.
-		  --version     Show version.
-		`
-			arguments, _ := docopt.Parse(usage, nil, true, "0.1", false)
-			path := arguments["<path>"].(string)
-	*/
-	run(&taskFactory{})
 }
